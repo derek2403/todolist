@@ -1,0 +1,41 @@
+.main {
+  min-height: calc(100vh - 60px);
+  background-color: var(--background);
+  width: 100%;
+  padding: 1rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Tablet and above */
+@media (min-width: 768px) {
+  .main {
+    padding: 2rem;
+  }
+  
+  .container {
+    grid-template-columns: 3fr 2fr;
+    gap: 2rem;
+  }
+}
+
+.main h1 {
+  color: var(--gray-800);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .main h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+} 

@@ -1,18 +1,16 @@
-import Calendar from '@/components/Calendar'
-import TodoList from '@/components/TodoList'
 import Navbar from '@/components/Navbar'
 import styles from '@/styles/Home.module.css'
 
-export default function Home() {
+export default function Finance() {
   return (
     <>
       <Navbar />
       <main className={styles.main}>
+        <h1>Finance Manager</h1>
         <div className={styles.container}>
-          <Calendar />
-          <TodoList />
+          <p style={{ textAlign: 'center', gridColumn: '1 / -1' }}>Coming soon...</p>
         </div>
       </main>
     </>
   )
-}
+} 
