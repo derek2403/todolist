@@ -17,6 +17,7 @@ export default function Calendar() {
     description: ''
   })
   const [showSelector, setShowSelector] = useState(false)
+  const [workouts, setWorkouts] = useState([])
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -29,6 +30,19 @@ export default function Calendar() {
       }
     }
     fetchEvents()
+  }, [])
+
+  useEffect(() => {
+    const fetchWorkouts = async () => {
+      try {
+        const response = await fetch('/api/workouts')
+        const data = await response.json()
+        setWorkouts(data.workouts || [])
+      } catch (error) {
+        console.error('Failed to fetch workouts:', error)
+      }
+    }
+    fetchWorkouts()
   }, [])
 
   const getDaysInMonth = (date) => {
@@ -134,6 +148,11 @@ export default function Calendar() {
     return date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear() &&
       day === today.getDate()
+  }
+
+  const isWorkoutDay = (day) => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return workouts.some(workout => workout.date === dateStr)
   }
 
   const months = [
@@ -245,7 +264,9 @@ export default function Calendar() {
           return (
             <div 
               key={day} 
-              className={`${styles.day} ${isCurrentDay(day) ? styles.currentDay : ''}`}
+              className={`${styles.day} 
+                ${isCurrentDay(day) ? styles.currentDay : ''} 
+                ${isWorkoutDay(day) ? styles.workoutDay : ''}`}
               onClick={() => handleDayClick(day)}
             >
               {day}

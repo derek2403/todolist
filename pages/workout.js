@@ -1,14 +1,16 @@
-import Navbar from '@/components/Navbar'
-import styles from '@/styles/Home.module.css'
+import Navbar from '../components/Navbar'
+import WorkoutRoutine from '../components/WorkoutRoutine'
+import WorkoutLog from '../components/WorkoutLog'
+import styles from '../styles/Workout.module.css'
 
-export default function Workout() {
+export default function WorkoutPage() {
   return (
     <>
       <Navbar />
-      <main className={styles.main}>
-        <h1>Workout Tracker</h1>
-        <div className={styles.container}>
-          <p style={{ textAlign: 'center', gridColumn: '1 / -1' }}>Coming soon...</p>
+      <main className={styles.container}>
+        <div className={styles.content}>
+          <WorkoutRoutine />
+          <WorkoutLog />
         </div>
       </main>
     </>

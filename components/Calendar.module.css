@@ -439,4 +439,12 @@
   .yearSelector {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.workoutDay {
+  background-color: rgba(144, 238, 144, 0.2) !important; /* Light green with transparency */
+}
+
+.workoutDay:hover {
+  background-color: rgba(144, 238, 144, 0.3) !important;
 } 
