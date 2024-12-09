@@ -3,7 +3,11 @@ import { useState, useEffect } from 'react'
 import styles from './Calendar.module.css'
 
 export default function Calendar() {
-  const [date, setDate] = useState(new Date())
+  const [date, setDate] = useState(() => {
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    return localDate
+  })
   const [events, setEvents] = useState([])
   const [showEventModal, setShowEventModal] = useState(false)
   const [showDaySummary, setShowDaySummary] = useState(false)
@@ -18,31 +22,52 @@ export default function Calendar() {
   })
   const [showSelector, setShowSelector] = useState(false)
   const [workouts, setWorkouts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch('/api/events')
-        const data = await response.json()
-        setEvents(data.events || [])
-      } catch (error) {
-        console.error('Failed to fetch events:', error)
+    const verifyDate = () => {
+      const today = new Date()
+      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+      
+      // Check if current date matches local date
+      if (date.getDate() !== localDate.getDate() ||
+          date.getMonth() !== localDate.getMonth() ||
+          date.getFullYear() !== localDate.getFullYear()) {
+        setDate(localDate)
       }
+      setIsLoading(false)
     }
-    fetchEvents()
+
+    verifyDate()
+    // Run verification every minute
+    const interval = setInterval(verifyDate, 60000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
-    const fetchWorkouts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/workouts')
-        const data = await response.json()
-        setWorkouts(data.workouts || [])
+        setIsLoading(true)
+        const [eventsRes, workoutsRes] = await Promise.all([
+          fetch('/api/events'),
+          fetch('/api/workouts')
+        ])
+        
+        const [eventsData, workoutsData] = await Promise.all([
+          eventsRes.json(),
+          workoutsRes.json()
+        ])
+
+        setEvents(eventsData.events || [])
+        setWorkouts(workoutsData.workouts || [])
       } catch (error) {
-        console.error('Failed to fetch workouts:', error)
+        console.error('Failed to fetch data:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
-    fetchWorkouts()
+
+    fetchData()
   }, [])
 
   const getDaysInMonth = (date) => {
@@ -196,6 +221,14 @@ export default function Calendar() {
       timeStr += ` - ${event.endTime.slice(0, 2)}:${event.endTime.slice(2)}`
     }
     return timeStr || 'All Day'
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner}></div>
+      </div>
+    )
   }
 
   return (
