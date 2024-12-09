@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
       default:
         res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE'])
-        res.status(405).end(`Method ${method} Not Allowed`)
+        res.status(405).json({ error: `Method ${req.method} Not Allowed` })
     }
   } catch (error) {
     console.error('Database error:', error)
