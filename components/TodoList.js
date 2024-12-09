@@ -45,14 +45,16 @@ export default function TodoList() {
     e.preventDefault()
     if (!newTodo.trim()) return
     
-    const todoDeadline = deadline || new Date().toISOString().split('T')[0]
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    const todoDeadline = deadline || localDate.toISOString().split('T')[0]
     
     const todo = {
       id: Date.now(),
       text: newTodo,
       completed: false,
       deadline: todoDeadline,
-      daysUntil: Math.ceil((new Date(todoDeadline) - new Date()) / (1000 * 60 * 60 * 24))
+      daysUntil: Math.ceil((new Date(todoDeadline) - localDate) / (1000 * 60 * 60 * 24))
     }
     
     try {
@@ -99,7 +101,11 @@ export default function TodoList() {
   }
 
   const formatDeadline = (deadline, daysUntil) => {
-    if (daysUntil === 0) {
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    const todayStr = localDate.toISOString().split('T')[0]
+    
+    if (deadline === todayStr) {
       return 'Due: Today'
     } else if (daysUntil < 0) {
       return `Overdue by ${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'}`
@@ -109,10 +115,14 @@ export default function TodoList() {
   }
 
   const filteredTodos = todos
-    .map(todo => ({
-      ...todo,
-      daysUntil: Math.ceil((new Date(todo.deadline) - new Date()) / (1000 * 60 * 60 * 24))
-    }))
+    .map(todo => {
+      const today = new Date()
+      const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+      return {
+        ...todo,
+        daysUntil: Math.ceil((new Date(todo.deadline) - localDate) / (1000 * 60 * 60 * 24))
+      }
+    })
     .sort((a, b) => {
       // Sort by days until deadline (overdue items first)
       if (a.daysUntil !== b.daysUntil) {

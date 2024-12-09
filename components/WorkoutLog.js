@@ -6,7 +6,9 @@ export default function WorkoutLog({ onWorkoutLogged }) {
   const [routines, setRoutines] = useState([])
   const [showLogModal, setShowLogModal] = useState(false)
   const [newLog, setNewLog] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))
+      .toISOString()
+      .split('T')[0],
     routineId: '',
     duration: '',
     calories: ''
@@ -50,7 +52,9 @@ export default function WorkoutLog({ onWorkoutLogged }) {
       if (response.ok) {
         onWorkoutLogged && onWorkoutLogged(workout)
         setNewLog({
-          date: new Date().toISOString().split('T')[0],
+          date: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))
+            .toISOString()
+            .split('T')[0],
           routineId: '',
           duration: '',
           calories: ''

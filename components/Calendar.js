@@ -58,6 +58,8 @@ export default function Calendar() {
   }
 
   const handleDayClick = (day) => {
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     setSelectedDate(dateStr)
     setShowDaySummary(true)
@@ -129,6 +131,8 @@ export default function Calendar() {
   }
 
   const getEventsForDay = (day) => {
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return events
       .filter(event => event.date === dateStr)
@@ -145,9 +149,10 @@ export default function Calendar() {
 
   const isCurrentDay = (day) => {
     const today = new Date()
-    return date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear() &&
-      day === today.getDate()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    return date.getMonth() === localDate.getMonth() &&
+      date.getFullYear() === localDate.getFullYear() &&
+      day === localDate.getDate()
   }
 
   const isWorkoutDay = (day) => {

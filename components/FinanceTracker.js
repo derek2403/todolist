@@ -27,7 +27,11 @@ export default function FinanceTracker() {
     date: new Date().toISOString().split('T')[0]
   })
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)) // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    return localDate.toISOString().substring(0, 7) // YYYY-MM
+  })
 
   const [showCategoryModal, setShowCategoryModal] = useState(false)
 
@@ -116,7 +120,10 @@ export default function FinanceTracker() {
   }
 
   const calculateStats = () => {
-    const monthlyTransactions = transactions.filter(t => t.date.startsWith(selectedMonth))
+    const today = new Date()
+    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+    const currentMonth = localDate.toISOString().substring(0, 7)
+    const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth))
     
     const stats = {
       totalExpense: 0,

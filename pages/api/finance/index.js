@@ -1,33 +1,20 @@
-import { promises as fs } from 'fs'
-import path from 'path'
-
-const financeFile = path.join(process.cwd(), 'data/finance.json')
-
-async function getFinanceFile() {
-  try {
-    await fs.access(financeFile)
-  } catch {
-    await fs.writeFile(financeFile, JSON.stringify({ transactions: [] }))
-  }
-  const data = await fs.readFile(financeFile, 'utf8')
-  return JSON.parse(data)
-}
+import clientPromise from '../../../utils/mongodb'
 
 export default async function handler(req, res) {
   try {
-    const { method } = req
+    const client = await clientPromise
+    const db = client.db("personal_dashboard")
+    const collection = db.collection("transactions")
 
-    switch (method) {
+    switch (req.method) {
       case 'GET':
-        const data = await getFinanceFile()
-        res.status(200).json(data)
+        const transactions = await collection.find({}).toArray()
+        res.status(200).json({ transactions })
         break
 
       case 'POST':
-        const { transactions: existingTransactions } = await getFinanceFile()
         const newTransaction = req.body
-        const updatedTransactions = [...existingTransactions, newTransaction]
-        await fs.writeFile(financeFile, JSON.stringify({ transactions: updatedTransactions }))
+        await collection.insertOne(newTransaction)
         res.status(201).json(newTransaction)
         break
 
@@ -36,6 +23,7 @@ export default async function handler(req, res) {
         res.status(405).end(`Method ${method} Not Allowed`)
     }
   } catch (error) {
+    console.error('Database error:', error)
     res.status(500).json({ error: 'Failed to process request' })
   }
 } 
