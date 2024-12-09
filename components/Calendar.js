@@ -19,10 +19,16 @@ export default function Calendar() {
   const [showSelector, setShowSelector] = useState(false)
 
   useEffect(() => {
-    const savedEvents = localStorage.getItem('events')
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents))
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events')
+        const data = await response.json()
+        setEvents(data.events || [])
+      } catch (error) {
+        console.error('Failed to fetch events:', error)
+      }
     }
+    fetchEvents()
   }, [])
 
   const getDaysInMonth = (date) => {
@@ -43,41 +49,84 @@ export default function Calendar() {
     setShowDaySummary(true)
   }
 
-  const addEvent = (e) => {
+  const validateTimeFormat = (time) => {
+    if (!time) return true // Empty is valid (whole day event)
+    const timeRegex = /^([01]\d|2[0-3])([0-5]\d)$/
+    return timeRegex.test(time)
+  }
+
+  const addEvent = async (e) => {
     e.preventDefault()
-    if (!newEvent.title.trim() || !newEvent.startTime || !newEvent.venue) return
+    if (!newEvent.title.trim() || !newEvent.venue) return
+    
+    // Validate time format if provided
+    if ((newEvent.startTime && !validateTimeFormat(newEvent.startTime)) || 
+        (newEvent.endTime && !validateTimeFormat(newEvent.endTime))) {
+      alert('Please enter time in 24hr format (e.g., 0900, 1430)')
+      return
+    }
 
     const newEventObj = {
       id: Date.now(),
       date: selectedDate,
+      isWholeDay: !newEvent.startTime && !newEvent.endTime,
       ...newEvent
     }
 
-    const updatedEvents = [...events, newEventObj]
-    setEvents(updatedEvents)
-    localStorage.setItem('events', JSON.stringify(updatedEvents))
-    
-    setNewEvent({
-      title: '',
-      startTime: '',
-      endTime: '',
-      venue: '',
-      description: ''
-    })
-    setShowEventModal(false)
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEventObj)
+      })
+      
+      if (response.ok) {
+        const savedEvent = await response.json()
+        setEvents([...events, savedEvent])
+        setNewEvent({
+          title: '',
+          startTime: '',
+          endTime: '',
+          venue: '',
+          description: ''
+        })
+        setShowEventModal(false)
+      }
+    } catch (error) {
+      console.error('Failed to add event:', error)
+    }
   }
 
-  const deleteEvent = (eventId) => {
-    const updatedEvents = events.filter(event => event.id !== eventId)
-    setEvents(updatedEvents)
-    localStorage.setItem('events', JSON.stringify(updatedEvents))
+  const deleteEvent = async (eventId) => {
+    try {
+      const response = await fetch(`/api/events?id=${eventId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        const updatedEvents = events.filter(event => event.id !== eventId)
+        setEvents(updatedEvents)
+      }
+    } catch (error) {
+      console.error('Failed to delete event:', error)
+    }
   }
 
   const getEventsForDay = (day) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return events
       .filter(event => event.date === dateStr)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+      .sort((a, b) => {
+        // Sort whole day events first, then by start time
+        if (a.isWholeDay && !b.isWholeDay) return -1
+        if (!a.isWholeDay && b.isWholeDay) return 1
+        if (!a.startTime && !b.startTime) return 0
+        if (!a.startTime) return 1
+        if (!b.startTime) return -1
+        return parseInt(a.startTime) - parseInt(b.startTime)
+      })
   }
 
   const isCurrentDay = (day) => {
@@ -107,6 +156,22 @@ export default function Calendar() {
     const newDate = new Date(date)
     newDate.setFullYear(parseInt(e.target.value))
     setDate(newDate)
+  }
+
+  const formatEventTime = (event) => {
+    if (event.isWholeDay) {
+      return 'All Day'
+    }
+    
+    let timeStr = ''
+    if (event.startTime) {
+      // Format HHMM to HH:MM
+      timeStr += `${event.startTime.slice(0, 2)}:${event.startTime.slice(2)}`
+    }
+    if (event.endTime) {
+      timeStr += ` - ${event.endTime.slice(0, 2)}:${event.endTime.slice(2)}`
+    }
+    return timeStr || 'All Day'
   }
 
   return (
@@ -231,8 +296,7 @@ export default function Calendar() {
                     </div>
                     <div className={styles.eventDetails}>
                       <p>
-                        <strong>Time:</strong> {event.startTime}
-                        {event.endTime && ` - ${event.endTime}`}
+                        <strong>Time:</strong> {formatEventTime(event)}
                       </p>
                       <p><strong>Venue:</strong> {event.venue}</p>
                       {event.description && (
@@ -276,22 +340,30 @@ export default function Calendar() {
               
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Start Time *</label>
+                  <label>Start Time</label>
                   <input
-                    type="time"
+                    type="text"
                     value={newEvent.startTime}
                     onChange={(e) => setNewEvent({...newEvent, startTime: e.target.value})}
+                    placeholder="e.g., 0900"
                     className={styles.input}
-                    required
+                    maxLength={4}
+                    pattern="[0-2][0-9][0-5][0-9]"
                   />
+                  <small className={styles.helperText}>
+                    24hr format (e.g., 0900, 1430). Leave empty for whole day event
+                  </small>
                 </div>
                 <div className={styles.formGroup}>
                   <label>End Time</label>
                   <input
-                    type="time"
+                    type="text"
                     value={newEvent.endTime}
                     onChange={(e) => setNewEvent({...newEvent, endTime: e.target.value})}
+                    placeholder="e.g., 1700"
                     className={styles.input}
+                    maxLength={4}
+                    pattern="[0-2][0-9][0-5][0-9]"
                   />
                 </div>
               </div>

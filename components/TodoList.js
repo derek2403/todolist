@@ -10,17 +10,38 @@ export default function TodoList() {
   const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
-    const savedTodos = localStorage.getItem('todos')
-    if (savedTodos) {
-      setTodos(JSON.parse(savedTodos))
+    const fetchTodos = async () => {
+      try {
+        const response = await fetch('/api/todos')
+        const data = await response.json()
+        setTodos(data.todos || [])
+      } catch (error) {
+        console.error('Failed to fetch todos:', error)
+      }
     }
+    fetchTodos()
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('todos', JSON.stringify(todos))
+    const updateTodos = async () => {
+      try {
+        await fetch('/api/todos', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(todos)
+        })
+      } catch (error) {
+        console.error('Failed to update todos:', error)
+      }
+    }
+    if (todos.length > 0) {
+      updateTodos()
+    }
   }, [todos])
 
-  const addTodo = (e) => {
+  const addTodo = async (e) => {
     e.preventDefault()
     if (!newTodo.trim()) return
     
@@ -34,11 +55,25 @@ export default function TodoList() {
       daysUntil: Math.ceil((new Date(todoDeadline) - new Date()) / (1000 * 60 * 60 * 24))
     }
     
-    const updatedTodos = [...todos, todo].sort((a, b) => a.daysUntil - b.daysUntil)
-    setTodos(updatedTodos)
-    setNewTodo('')
-    setDeadline('')
-    setShowAddModal(false)
+    try {
+      const response = await fetch('/api/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(todo)
+      })
+      
+      if (response.ok) {
+        const updatedTodos = [...todos, todo].sort((a, b) => a.daysUntil - b.daysUntil)
+        setTodos(updatedTodos)
+        setNewTodo('')
+        setDeadline('')
+        setShowAddModal(false)
+      }
+    } catch (error) {
+      console.error('Failed to add todo:', error)
+    }
   }
 
   const toggleTodo = (id) => {
@@ -47,8 +82,20 @@ export default function TodoList() {
     ))
   }
 
-  const deleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id))
+  const deleteTodo = async (id) => {
+    try {
+      const response = await fetch(`/api/todos?id=${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setTodos(todos.filter(todo => todo.id !== id))
+      } else {
+        console.error('Failed to delete todo')
+      }
+    } catch (error) {
+      console.error('Failed to delete todo:', error)
+    }
   }
 
   const formatDeadline = (deadline, daysUntil) => {
