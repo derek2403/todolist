@@ -66,15 +66,21 @@ export default function WorkoutRoutine() {
       })
       
       if (response.ok) {
-        setRoutines([...routines, routine])
+        const data = await response.json()
+        setRoutines([...routines, data.routine])
         setNewRoutine({
           name: '',
           exercises: [{ name: '', reps: '', duration: '' }]
         })
         setShowAddModal(false)
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to add routine:', errorData)
+        alert('Failed to save routine. Please try again.')
       }
     } catch (error) {
       console.error('Failed to add routine:', error)
+      alert('Failed to save routine. Please try again.')
     }
   }
 

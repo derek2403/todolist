@@ -1,41 +1,28 @@
-import { promises as fs } from 'fs'
-import path from 'path'
-
-const routinesFile = path.join(process.cwd(), 'data/routines.json')
-
-async function getRoutinesFile() {
-  try {
-    await fs.access(routinesFile)
-  } catch {
-    await fs.writeFile(routinesFile, JSON.stringify({ routines: [] }))
-  }
-  const data = await fs.readFile(routinesFile, 'utf8')
-  return JSON.parse(data)
-}
+import clientPromise from '../../../utils/mongodb'
 
 export default async function handler(req, res) {
   try {
+    const client = await clientPromise
+    const db = client.db("workout-tracker") // Your database name
+    const routinesCollection = db.collection("routines")
     const { method } = req
 
     switch (method) {
       case 'GET':
-        const data = await getRoutinesFile()
-        res.status(200).json(data)
+        const routines = await routinesCollection.find({}).toArray()
+        res.status(200).json({ routines })
         break
 
       case 'POST':
-        const { routines: existingRoutines } = await getRoutinesFile()
         const newRoutine = req.body
-        const updatedRoutines = [...existingRoutines, newRoutine]
-        await fs.writeFile(routinesFile, JSON.stringify({ routines: updatedRoutines }))
-        res.status(201).json(newRoutine)
+        const result = await routinesCollection.insertOne(newRoutine)
+        const savedRoutine = { ...newRoutine, _id: result.insertedId }
+        res.status(201).json({ routine: savedRoutine })
         break
 
       case 'DELETE':
-        const { routines } = await getRoutinesFile()
         const { id } = req.query
-        const filteredRoutines = routines.filter(routine => routine.id !== parseInt(id))
-        await fs.writeFile(routinesFile, JSON.stringify({ routines: filteredRoutines }))
+        await routinesCollection.deleteOne({ id: parseInt(id) })
         res.status(200).json({ success: true })
         break
 
@@ -44,6 +31,7 @@ export default async function handler(req, res) {
         res.status(405).end(`Method ${method} Not Allowed`)
     }
   } catch (error) {
+    console.error('Database error:', error)
     res.status(500).json({ error: 'Failed to process request' })
   }
 } 
